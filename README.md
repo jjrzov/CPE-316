@@ -1,1 +1,2 @@
-# CPE 316
+CPE 316 Labs/Project
+Jorge Ramirez & Miles Fesler
