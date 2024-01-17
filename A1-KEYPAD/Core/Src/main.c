@@ -77,7 +77,7 @@ int main(void)
 	//bank A as GPIO
 	//preset rows as inputs
 	GPIOA->MODER &= ~(GPIO_MODER_MODE0 | GPIO_MODER_MODE1 | GPIO_MODER_MODE4);
-	//GPIOA->MODER |= (GPIO_MODER_MODE0_0 | GPIO_MODER_MODE1_0 | GPIO_MODER_MODE4_0);
+
 	//set pins A0,1,4 to pull down
 	GPIOA->PUPDR &= ~(GPIO_PUPDR_PUPD0 | GPIO_PUPDR_PUPD1 | GPIO_PUPDR_PUPD4);
 	GPIOA->PUPDR |= (GPIO_PUPDR_PUPD0_1 | GPIO_PUPDR_PUPD1_1 | GPIO_PUPDR_PUPD4_1);
@@ -85,18 +85,20 @@ int main(void)
 	//bank B as GPIO
 	//preset rows as inputs
 	GPIOB->MODER &= ~(GPIO_MODER_MODE0);
-	//GPIOB->MODER |= ~(GPIO_MODER_MODE4_0);
+
 	//set pin B0 to pull down
 	GPIOB->PUPDR &= ~(GPIO_PUPDR_PUPD0);
 	GPIOB->PUPDR |= (GPIO_PUPDR_PUPD0_1);
+
+	//set pins B3,4,5,10 as outputs
+	GPIOB->MODER &= ~(GPIO_MODER_MODE3 | GPIO_MODER_MODE4 | GPIO_MODER_MODE5 | GPIO_MODER_MODE10);
+	GPIOB->MODER |= (GPIO_MODER_MODE3_0 | GPIO_MODER_MODE4_0 | GPIO_MODER_MODE5_0 | GPIO_MODER_MODE10_0);
 
 	//bank C as GPIO
 	//preset the columns as outputs
 	GPIOC->MODER &= ~(GPIO_MODER_MODE0 | GPIO_MODER_MODE1 | GPIO_MODER_MODE2 | GPIO_MODER_MODE3);
 	GPIOC->MODER |= (GPIO_MODER_MODE0_0 | GPIO_MODER_MODE1_0 | GPIO_MODER_MODE2_0 | GPIO_MODER_MODE3_0);
-	//set pin C0-3 to pull down
-	//GPIOC->PUPDR &= ~(GPIO_PUPDR_PUPD0 | GPIO_PUPDR_PUPD1 | GPIO_PUPDR_PUPD2 | GPIO_PUPDR_PUPD3);
-	//GPIOC->PUPDR |= (GPIO_PUPDR_PUPD0_1 | GPIO_PUPDR_PUPD1_1 | GPIO_PUPDR_PUPD2_1 | GPIO_PUPDR_PUPD3_1);
+
   /* USER CODE END Init */
 
   /* Configure the system clock */
@@ -104,8 +106,6 @@ int main(void)
 
   /* USER CODE BEGIN SysInit */
 	//preset all pins to 0
-	//GPIOA->BRR = (GPIO_PIN_0 | GPIO_PIN_1 | GPIO_PIN_4);
-	//GPIOB->BRR = (GPIO_PIN_4);
 	GPIOC->BRR = (GPIO_PIN_0 | GPIO_PIN_1 | GPIO_PIN_2 | GPIO_PIN_3);
   /* USER CODE END SysInit */
 
@@ -116,19 +116,25 @@ int main(void)
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-	int res = -1;
 	int col = 0;
 	while (1)
 	{
     /* USER CODE END WHILE */
+		GPIOB->ODR &= ~(GPIO_PIN_3 | GPIO_PIN_4 | GPIO_PIN_5 | GPIO_PIN_10); // set pin 3,4,5,10 of PORT B to 0
+		int res = -1;
 		while (res == -1){
 			res = PressDetector(col);
 			col++;
-			if (col >= 3){
+			if (col >= 4){
 				col = 0;
 			}
 		}
-
+		int b0 = ((res & 1) != 0);
+		int b1 = ((res & 2) != 0);
+		int b2 = ((res & 4) != 0);
+		int b3 = ((res & 8) != 0);
+		GPIOB->ODR &= ~(GPIO_PIN_3 | GPIO_PIN_4 | GPIO_PIN_5 | GPIO_PIN_10); // set pin 3,4,5,10 of PORT B to 0
+		GPIOB->ODR |= (b0 << 3| b1 << 4 | b2 << 5 | b3 << 10); // set pin 3,4,5,10 of PORT B to corresponding bit val
     /* USER CODE BEGIN 3 */
 	}
   /* USER CODE END 3 */
@@ -141,16 +147,36 @@ int PressDetector(int col){
 	//returns the now known row after button pressed
 	GPIOC->BRR = (GPIO_PIN_0 | GPIO_PIN_1 | GPIO_PIN_2 | GPIO_PIN_3);
 	GPIOC->BSRR = (1 << col); //set given column high
-
 	//check all the rows once
 	if (GPIOA->IDR & GPIO_PIN_0){
-		return col + (0 * 4);
+		if (col == 3){
+			return 10;
+		} else {
+			return col + (0 * 4) + 1;
+		}
 	} else if (GPIOA->IDR & GPIO_PIN_1){
-		return col + (1 * 4);
+		if (col == 3){
+			return 11;
+		} else {
+			return col + (1 * 4);
+		}
 	} else if (GPIOA->IDR & GPIO_PIN_4){
-		return col + (2 * 4);
+		if (col == 3){
+			return 12;
+		} else {
+			return col + (2 * 4) - 1;
+		}
 	} else if (GPIOB->IDR & GPIO_PIN_0){
-		return col + (3 * 4);
+		switch(col){
+		case 0:
+			return 15;
+		case 1:
+			return 0;
+		case 2:
+			return 14;
+		case 3:
+			return 13;
+		}
 	} else {
 		//no key pressed
 		return -1;

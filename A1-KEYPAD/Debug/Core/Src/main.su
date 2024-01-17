@@ -1,4 +1,4 @@
-../Core/Src/main.c:63:5:main	16	static
-../Core/Src/main.c:134:5:PressDetector	16	static
-../Core/Src/main.c:159:6:SystemClock_Config	96	static
-../Core/Src/main.c:207:6:Error_Handler	4	static,ignoring_inline_asm
+../Core/Src/main.c:63:5:main	32	static
+../Core/Src/main.c:146:5:PressDetector	16	static
+../Core/Src/main.c:191:6:SystemClock_Config	96	static
+../Core/Src/main.c:239:6:Error_Handler	4	static,ignoring_inline_asm
