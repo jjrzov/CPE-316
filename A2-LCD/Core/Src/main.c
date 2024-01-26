@@ -48,7 +48,7 @@
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 void LCD_init(void);
-void LCD_write(uint8_t command);
+void LCD_write(uint8_t command, uint8_t mode);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
@@ -101,39 +101,72 @@ int main(void)
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-  while (1)
-  {
-    /* USER CODE END WHILE */
+  LCD_init();
+  LCD_write('H', 1);
+  LCD_write('e', 1);
+  LCD_write('l', 1);
+  LCD_write('l', 1);
+  LCD_write('o', 1);
+  LCD_write(' ', 1);
+  LCD_write('W', 1);
+  LCD_write('o', 1);
+  LCD_write('r', 1);
+  LCD_write('l', 1);
+  LCD_write('d', 1);
+  LCD_write(0xC0, 0); //Go to 2nd line
+  LCD_write('A', 1);
+  LCD_write('s', 1);
+  LCD_write('s', 1);
+  LCD_write('i', 1);
+  LCD_write('g', 1);
+  LCD_write('n', 1);
+  LCD_write('m', 1);
+  LCD_write('e', 1);
+  LCD_write('n', 1);
+  LCD_write('t', 1);
+  LCD_write(' ', 1);
+  LCD_write('3', 1);
 
-    /* USER CODE BEGIN 3 */
-  }
   /* USER CODE END 3 */
 }
 
 void LCD_init(void){
-
+  LCD_write(0x30, 0); //set function to 8 bits
+  LCD_write(0x0F, 0); //turn on display, cursor, and blinking cursor
+  LCD_write(0x01, 0); //clear display
+  LCD_write(0x02, 0); //return home
+  LCD_write(0x3C, 0); //set 2 line mode
 }
 
-void LCD_write(uint8_t command, ){
-  int b0 = ((command & 1) != 0);
-  int b1 = ((command & 2) != 0);
-  int b2 = ((command & 4) != 0);
-  int b3 = ((command & 8) != 0);
-  int b4 = ((command & 16) != 0);
-  int b5 = ((command & 32) != 0);
-  int b6 = ((command & 64) != 0);
-  int b7 = ((command & 128) != 0);
+void LCD_write(uint8_t command, uint8_t mode){
+  // mode == 0 for init / mode == 1 for writing
+//  int b0 = ((command & 1) != 0);
+//  int b1 = ((command & 2) != 0);
+//  int b2 = ((command & 4) != 0);
+//  int b3 = ((command & 8) != 0);
+//  int b4 = ((command & 16) != 0);
+//  int b5 = ((command & 32) != 0);
+//  int b6 = ((command & 64) != 0);
+//  int b7 = ((command & 128) != 0);
 
   //set RS high and RW low for writing
-  GPIOC->BSRR = (GPIO_PIN_11);
+  if (mode){
+	  //not in init so set RS high
+	  GPIOC->BSRR = (GPIO_PIN_11);
+  } else {
+	  //init so RS low
+	  GPIOC->BRR = (GPIO_PIN_11);
+  }
+  //RW goes high
   GPIOC->BRR = (GPIO_PIN_12);
   //set DB0-7 to valid data
-  GPIOC->ODR |= (b0 << 0 | b1 << 1 | b2 << 2 | b3 << 3 | b4 << 4 | b5 << 5 | b6 << 6 | b7 << 7);
+  GPIOC->ODR &= ~(0xff);
+  GPIOC->ODR |= (0xff & command);
 
-  HAL_delay(5);
+  HAL_Delay(5);
   //set EN high
   GPIOC->BSRR = (GPIO_PIN_10);
-  HAL_delay(1);
+  HAL_Delay(5);
   GPIOC->BRR = (GPIO_PIN_10);
 }
 
