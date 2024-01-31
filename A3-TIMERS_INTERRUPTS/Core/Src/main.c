@@ -20,7 +20,7 @@
 #include "main.h"
 
 /* Private variables ---------------------------------------------------------*/
-TIM_HandleTypeDef htim2;
+//TIM_HandleTypeDef htim2;
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
@@ -58,32 +58,29 @@ int main(void)
   NVIC->ISER[0] = (1 << (TIM2_IRQn & 0x1F));
 
   RCC->APB1ENR1 |= (RCC_APB1ENR1_TIM2EN);	// turn on TIM2
-  TIM2->CCR1 = (1 << 19);			// set channel 1 compare value
+  TIM2->CCR1 = 0x000000C8;			// set channel 1 compare value to 200 for 25% Duty Cycle
   TIM2->DIER |= (TIM_DIER_CC1IE);	// enable interrupts on channel 1
-  TIM2->SR &= ~(TIM_SR_CC1IF);		// clear interrupt flag
-  TIM2->ARR = 0xFFFFFFFF;			// set count reload value 2^32
+  TIM2->SR &= ~(TIM_SR_CC1IF);		// go into status register and clear interrupt flag
+  TIM2->ARR = 0x00000320;			// set count reload value 800
   TIM2->CR1 |= TIM_CR1_CEN;			// start timer
 
-  while (1)
-  {
-
-
-  }
 }
 
 void TIM2_IRQHandler(void)
 {
 
-  //HAL_TIM_IRQHandler(&htim2);
-  TIM2->SR &= ~(TIM_SR_CC1IF);
-
-  TIM2->CCR1 += (1 << 19);
-
-  if (GPIOA->ODR & GPIO_PIN_5)
-	  GPIOA->BRR = GPIO_PIN_5;
-  else
-	  GPIOA->BSRR = GPIO_PIN_5;
-
+	 uint32_t C_int = TIM2->SR & TIM_SR_CC1IF;
+	 uint32_t ARR_int = TIM2->SR & TIM_SR_UIF;
+	 TIM2->SR &= ~(TIM_SR_CC1IF);
+	 TIM2->SR &= ~(TIM_SR_UIF);
+	 TIM2->CCR1 += (0x000000C7);
+	 if (ARR_int){
+		 GPIOA->BSRR = GPIO_PIN_5;
+	  	 TIM2->CCR1 = 0x000000C7;
+	 }
+	 else if (C_int){
+		  GPIOA->BRR = GPIO_PIN_5;
+	 }
 }
 
 /**

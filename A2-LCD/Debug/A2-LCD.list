@@ -234,7 +234,6 @@ int main(void)
  80002b8:	f000 f824 	bl	8000304 <LCD_write>
  80002bc:	2300      	movs	r3, #0
 
-
   /* USER CODE END 3 */
 }
  80002be:	4618      	mov	r0, r3

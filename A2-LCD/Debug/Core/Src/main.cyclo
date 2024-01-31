@@ -1,5 +1,5 @@
 ../Core/Src/main.c:65:5:main	1
-../Core/Src/main.c:134:6:LCD_init	1
-../Core/Src/main.c:142:6:LCD_write	2
-../Core/Src/main.c:178:6:SystemClock_Config	4
-../Core/Src/main.c:226:6:Error_Handler	1
+../Core/Src/main.c:133:6:LCD_init	1
+../Core/Src/main.c:141:6:LCD_write	2
+../Core/Src/main.c:177:6:SystemClock_Config	4
+../Core/Src/main.c:225:6:Error_Handler	1
