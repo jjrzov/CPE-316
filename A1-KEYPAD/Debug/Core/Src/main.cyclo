@@ -1,4 +1,4 @@
 ../Core/Src/main.c:63:5:main	3
-../Core/Src/main.c:146:5:PressDetector	12
-../Core/Src/main.c:191:6:SystemClock_Config	4
-../Core/Src/main.c:239:6:Error_Handler	1
+../Core/Src/main.c:145:5:PressDetector	12
+../Core/Src/main.c:190:6:SystemClock_Config	4
+../Core/Src/main.c:238:6:Error_Handler	1

@@ -2814,16 +2814,16 @@ LOAD C:/Users/jjrzo/Coding/STM32CubeIDE_1.14.0/STM32CubeIDE/plugins/com.st.stm32
  .debug_macro   0x0000000000023bf5      0x1bc ./Drivers/STM32L4xx_HAL_Driver/Src/stm32l4xx_hal_pwr_ex.o
  .debug_macro   0x0000000000023db1      0x1da ./Drivers/STM32L4xx_HAL_Driver/Src/stm32l4xx_hal_rcc.o
 
-.debug_line     0x0000000000000000     0x56c3
- .debug_line    0x0000000000000000      0x86d ./Core/Src/main.o
- .debug_line    0x000000000000086d      0x787 ./Core/Src/stm32l4xx_hal_msp.o
- .debug_line    0x0000000000000ff4      0x849 ./Core/Src/stm32l4xx_it.o
- .debug_line    0x000000000000183d      0x81e ./Core/Src/system_stm32l4xx.o
- .debug_line    0x000000000000205b       0x7a ./Core/Startup/startup_stm32l476rgtx.o
- .debug_line    0x00000000000020d5      0xb76 ./Drivers/STM32L4xx_HAL_Driver/Src/stm32l4xx_hal.o
- .debug_line    0x0000000000002c4b      0xd1d ./Drivers/STM32L4xx_HAL_Driver/Src/stm32l4xx_hal_cortex.o
- .debug_line    0x0000000000003968      0xd6e ./Drivers/STM32L4xx_HAL_Driver/Src/stm32l4xx_hal_pwr_ex.o
- .debug_line    0x00000000000046d6      0xfed ./Drivers/STM32L4xx_HAL_Driver/Src/stm32l4xx_hal_rcc.o
+.debug_line     0x0000000000000000     0x56c1
+ .debug_line    0x0000000000000000      0x86b ./Core/Src/main.o
+ .debug_line    0x000000000000086b      0x787 ./Core/Src/stm32l4xx_hal_msp.o
+ .debug_line    0x0000000000000ff2      0x849 ./Core/Src/stm32l4xx_it.o
+ .debug_line    0x000000000000183b      0x81e ./Core/Src/system_stm32l4xx.o
+ .debug_line    0x0000000000002059       0x7a ./Core/Startup/startup_stm32l476rgtx.o
+ .debug_line    0x00000000000020d3      0xb76 ./Drivers/STM32L4xx_HAL_Driver/Src/stm32l4xx_hal.o
+ .debug_line    0x0000000000002c49      0xd1d ./Drivers/STM32L4xx_HAL_Driver/Src/stm32l4xx_hal_cortex.o
+ .debug_line    0x0000000000003966      0xd6e ./Drivers/STM32L4xx_HAL_Driver/Src/stm32l4xx_hal_pwr_ex.o
+ .debug_line    0x00000000000046d4      0xfed ./Drivers/STM32L4xx_HAL_Driver/Src/stm32l4xx_hal_rcc.o
 
 .debug_str      0x0000000000000000    0xddeb0
  .debug_str     0x0000000000000000    0xdc9dc ./Core/Src/main.o
