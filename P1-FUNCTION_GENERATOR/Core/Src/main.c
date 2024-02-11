@@ -19,83 +19,64 @@
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 
-/* Private includes ----------------------------------------------------------*/
-/* USER CODE BEGIN Includes */
-
-/* USER CODE END Includes */
-
-/* Private typedef -----------------------------------------------------------*/
-/* USER CODE BEGIN PTD */
-
-/* USER CODE END PTD */
-
-/* Private define ------------------------------------------------------------*/
-/* USER CODE BEGIN PD */
-
-/* USER CODE END PD */
-
-/* Private macro -------------------------------------------------------------*/
-/* USER CODE BEGIN PM */
-
-/* USER CODE END PM */
-
-/* Private variables ---------------------------------------------------------*/
-
-/* USER CODE BEGIN PV */
-
-/* USER CODE END PV */
+#define TABLE_SIZE 240
+#define AMPLITUDE 1500 //3 Vpp
+#define DC_OFFSET 1500 //1.5V DC offset
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
-/* USER CODE BEGIN PFP */
+void fill_sin_table(int *sin_table);
+void fill_saw_table(int *saw_table);
+void fill_triangle_table(int *triangle_table);
+void fill_square_table(int *square_table);
 
-/* USER CODE END PFP */
-
-/* Private user code ---------------------------------------------------------*/
-/* USER CODE BEGIN 0 */
-
-/* USER CODE END 0 */
-
-/**
-  * @brief  The application entry point.
-  * @retval int
-  */
 int main(void)
 {
-  /* USER CODE BEGIN 1 */
+	HAL_Init();
+	SystemClock_Config();
 
-  /* USER CODE END 1 */
+	//initialize and fill in tables
+	int sine_table[TABLE_SIZE];
+	int saw_table[TABLE_SIZE];
+	int triangle_table[TABLE_SIZE];
+	int square_table[TABLE_SIZE];
 
-  /* MCU Configuration--------------------------------------------------------*/
+	fill_sin_table(sin_table);
+	fill_saw_table(saw_table);
+	fill_triangle_table(triangle_table);
+	fill_square_table(square_table);
 
-  /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
-  HAL_Init();
+	while (1)
+	{
 
-  /* USER CODE BEGIN Init */
+	}
 
-  /* USER CODE END Init */
+}
 
-  /* Configure the system clock */
-  SystemClock_Config();
+void fill_sin_table(int *sin_table){
+	int i;
+	for(i = 0; i < TABLE_SIZE; i++){
+		sin_table[i] = (int)((AMPLITUDE) * sin((2 * M_PI * i) / TABLE_SIZE) + DC_OFFSET);
+	}
+}
 
-  /* USER CODE BEGIN SysInit */
+void fill_saw_table(int *saw_table){
+	int i;
+	for(i = 0; i < TABLE_SIZE; i++){
+		saw_table[i] = (int)((AMPLITUDE * i)/TABLE_SIZE);
+	}
+}
 
-  /* USER CODE END SysInit */
+void fill_triangle_table(int *triangle_table){
+	int i;
+	for(i = 0; i < TABLE_SIZE/2; i++){
+		triangle_table[i] = (int)((AMPLITUDE * i)/TABLE_SIZE);
+		triangle_table[(TABLE_SIZE - 1) - i] = triangle_table[i];
+	}
+}
 
-  /* Initialize all configured peripherals */
-  /* USER CODE BEGIN 2 */
+void fill_square_table(int *square_table){
 
-  /* USER CODE END 2 */
-
-  /* Infinite loop */
-  /* USER CODE BEGIN WHILE */
-  while (1)
-  {
-    /* USER CODE END WHILE */
-
-    /* USER CODE BEGIN 3 */
-  }
-  /* USER CODE END 3 */
 }
 
 /**
