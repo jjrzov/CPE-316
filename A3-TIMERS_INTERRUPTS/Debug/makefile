@@ -60,8 +60,8 @@ all: main-build
 main-build: A3-TIMERS_INTERRUPTS.elf secondary-outputs
 
 # Tool invocations
-A3-TIMERS_INTERRUPTS.elf A3-TIMERS_INTERRUPTS.map: $(OBJS) $(USER_OBJS) C:\Users\jjrzo\Coding\CPE\ 316\A3-TIMERS_INTERRUPTS\STM32L476RGTX_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
-	arm-none-eabi-gcc -o "A3-TIMERS_INTERRUPTS.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m4 -T"C:\Users\jjrzo\Coding\CPE 316\A3-TIMERS_INTERRUPTS\STM32L476RGTX_FLASH.ld" --specs=nosys.specs -Wl,-Map="A3-TIMERS_INTERRUPTS.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
+A3-TIMERS_INTERRUPTS.elf A3-TIMERS_INTERRUPTS.map: $(OBJS) $(USER_OBJS) C:\Users\miles\OneDrive\Documents\CPE-316\A3-TIMERS_INTERRUPTS\STM32L476RGTX_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
+	arm-none-eabi-gcc -o "A3-TIMERS_INTERRUPTS.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m4 -T"C:\Users\miles\OneDrive\Documents\CPE-316\A3-TIMERS_INTERRUPTS\STM32L476RGTX_FLASH.ld" --specs=nosys.specs -Wl,-Map="A3-TIMERS_INTERRUPTS.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
 	@echo 'Finished building target: $@'
 	@echo ' '
 

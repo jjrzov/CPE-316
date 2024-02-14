@@ -60,8 +60,8 @@ all: main-build
 main-build: P1-FUNCTION_GENERATOR.elf secondary-outputs
 
 # Tool invocations
-P1-FUNCTION_GENERATOR.elf P1-FUNCTION_GENERATOR.map: $(OBJS) $(USER_OBJS) C:\Users\jjrzo\Coding\CPE\ 316\P1-FUNCTION_GENERATOR\STM32L476RGTX_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
-	arm-none-eabi-gcc -o "P1-FUNCTION_GENERATOR.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m4 -T"C:\Users\jjrzo\Coding\CPE 316\P1-FUNCTION_GENERATOR\STM32L476RGTX_FLASH.ld" --specs=nosys.specs -Wl,-Map="P1-FUNCTION_GENERATOR.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
+P1-FUNCTION_GENERATOR.elf P1-FUNCTION_GENERATOR.map: $(OBJS) $(USER_OBJS) C:\Users\miles\OneDrive\Documents\CPE-316\P1-FUNCTION_GENERATOR\STM32L476RGTX_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
+	arm-none-eabi-gcc -o "P1-FUNCTION_GENERATOR.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m4 -T"C:\Users\miles\OneDrive\Documents\CPE-316\P1-FUNCTION_GENERATOR\STM32L476RGTX_FLASH.ld" --specs=nosys.specs -Wl,-Map="P1-FUNCTION_GENERATOR.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
 	@echo 'Finished building target: $@'
 	@echo ' '
 

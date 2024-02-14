@@ -60,8 +60,8 @@ all: main-build
 main-build: A4-DAC.elf secondary-outputs
 
 # Tool invocations
-A4-DAC.elf A4-DAC.map: $(OBJS) $(USER_OBJS) C:\Users\jjrzo\Coding\CPE\ 316\A4-DAC\STM32L476RGTX_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
-	arm-none-eabi-gcc -o "A4-DAC.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m4 -T"C:\Users\jjrzo\Coding\CPE 316\A4-DAC\STM32L476RGTX_FLASH.ld" --specs=nosys.specs -Wl,-Map="A4-DAC.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
+A4-DAC.elf A4-DAC.map: $(OBJS) $(USER_OBJS) C:\Users\miles\OneDrive\Documents\CPE-316\A4-DAC\STM32L476RGTX_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
+	arm-none-eabi-gcc -o "A4-DAC.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m4 -T"C:\Users\miles\OneDrive\Documents\CPE-316\A4-DAC\STM32L476RGTX_FLASH.ld" --specs=nosys.specs -Wl,-Map="A4-DAC.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
 	@echo 'Finished building target: $@'
 	@echo ' '
 
