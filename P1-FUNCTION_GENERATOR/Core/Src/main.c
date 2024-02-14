@@ -18,6 +18,8 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
+#include <math.h>
+
 
 #define TABLE_SIZE 240
 #define AMPLITUDE 1500 //3 Vpp
@@ -27,34 +29,30 @@
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
-void fill_sin_table(int *sin_table);
-void fill_saw_table(int *saw_table);
-void fill_triangle_table(int *triangle_table);
-void fill_square_table(int *square_table);
+void fill_sine_table();
+void fill_saw_table();
+void fill_triangle_table();
 void DAC_write(uint16_t data);
-uint16_t DAC_volt_conv(uint16_t volt);
+uint16_t DAC_volt_conv(uint16_t milli_volt);
+
+//global variables ##############################################################################
+static uint16_t sine_table[TABLE_SIZE];
+static uint16_t saw_table[TABLE_SIZE];
+static uint16_t triangle_table[TABLE_SIZE];
+int ccr_count;
 
 int main(void)
 {
 	HAL_Init();
 	SystemClock_Config();
 
-
-
 	//TABLES ##################################################################################################
-	int sine_table[TABLE_SIZE];
-	int saw_table[TABLE_SIZE];
-	int triangle_table[TABLE_SIZE];
-	int square_table[TABLE_SIZE];
-
-	fill_sin_table(sin_table);
-	fill_saw_table(saw_table);
-	fill_triangle_table(triangle_table);
-	fill_square_table(square_table);
+	fill_sine_table();
+	fill_saw_table();
+	fill_triangle_table();
 
 	//SPI ###################################################################################################
 	RCC->AHB2ENR |= (RCC_AHB2ENR_GPIOAEN); //enable clock for port A (SCLK)
-	RCC->CFGR |= (0x7 << 11); //MAYBE NOT NEEDED!?
 
 	//reset pins
 	GPIOA->MODER &= ~(GPIO_MODER_MODE4 | GPIO_MODER_MODE5 | GPIO_MODER_MODE6 | GPIO_MODER_MODE7);
@@ -73,7 +71,7 @@ int main(void)
 	RCC->APB2ENR |= (RCC_APB2ENR_SPI1EN); //enable SPI clock
 	SPI1->CR1 &= ~0xFFFF; //reset CR1
 	SPI1->CR1 = (1 << 2) //master mode
-		  | (0x7 << 3) //baud rate f/256
+		  | (0x0 << 3) //baud rate f/2
 		  | (1 << 14); //transmit only
 
 	SPI1->CR2 &= ~0xFFFF; //reset CR2
@@ -89,11 +87,12 @@ int main(void)
 	NVIC->ISER[0] = (1 << (TIM2_IRQn & 0x1F));
 
 	RCC->APB1ENR1 |= (RCC_APB1ENR1_TIM2EN);	// turn on TIM2
-	TIM2->CCR1 = 0x000000C8;			// set channel 1 compare value to 200 for 25% Duty Cycle
+	TIM2->CCR1 = 0x000003E8;			// set CCR1 to 1000 for 100Hz
 	TIM2->DIER |= (TIM_DIER_CC1IE);	// enable interrupts on channel 1
+	//TIM2->CCMR1 &= ~(0 << 3);
 	TIM2->SR &= ~(TIM_SR_CC1IF);		// go into status register and clear interrupt flag
-	TIM2->ARR = 0x00000320;			// set count reload value 800
-	//TIM2->CR1 |= TIM_CR1_CEN;			// start timer
+	TIM2->ARR = 0x0003A980;			// set ARR to 240000
+	TIM2->CR1 |= TIM_CR1_CEN;			// start timer
 
 	while (1)
 	{
@@ -102,30 +101,29 @@ int main(void)
 
 }
 
-void fill_sin_table(int *sin_table){
-	int i;
+void fill_sine_table(void){
+	uint16_t i, temp;
 	for(i = 0; i < TABLE_SIZE; i++){
-		sin_table[i] = (int)((AMPLITUDE) * sin((2 * M_PI * i) / TABLE_SIZE) + DC_OFFSET);
+		temp = (uint16_t)((AMPLITUDE) * sin((2 * M_PI * 100 * i) / TABLE_SIZE) + DC_OFFSET);
+		sine_table[i] = DAC_volt_conv(temp);
 	}
 }
 
-void fill_saw_table(int *saw_table){
-	int i;
+void fill_saw_table(void){
+	uint16_t i, temp;
 	for(i = 0; i < TABLE_SIZE; i++){
-		saw_table[i] = (int)((AMPLITUDE * i)/TABLE_SIZE);
+		temp = (uint16_t)((AMPLITUDE * i)/TABLE_SIZE);
+		saw_table[i] = DAC_volt_conv(temp);
 	}
 }
 
-void fill_triangle_table(int *triangle_table){
-	int i;
+void fill_triangle_table(void){
+	uint16_t i, temp;
 	for(i = 0; i < TABLE_SIZE/2; i++){
-		triangle_table[i] = (int)((AMPLITUDE * i)/TABLE_SIZE);
+		temp = (uint16_t)((AMPLITUDE * i)/TABLE_SIZE);
+		triangle_table[i] = DAC_volt_conv(temp);
 		triangle_table[(TABLE_SIZE - 1) - i] = triangle_table[i];
 	}
-}
-
-void fill_square_table(int *square_table){
-
 }
 
 void TIM2_IRQHandler(void){
@@ -134,13 +132,17 @@ void TIM2_IRQHandler(void){
 
 	 TIM2->SR &= ~(TIM_SR_CC1IF);
 	 TIM2->SR &= ~(TIM_SR_UIF);
-	 TIM2->CCR1 += (0x000000C7);
+	 //TIM2->CCR1 += (0x000003E8); //increment CCR1 by 1000
 	 if (ARR_int){
-		 //write to the DAC each time ARR reached
-		 TIM2->CCR1 = 0x000000C7;
+		 //reset CCR1 each time ARR reached
+		 TIM2->CCR1 = 0x000003E8;
+		 ccr_count = 1000;
 	 }
 	 else if (C_int){
-		 //CC1F only used for square wave duty cycle
+		 //write to DAC each time CCR1 reached
+		 DAC_write(saw_table[(ccr_count)/1000]);
+		 ccr_count += 1000;
+		 TIM2->CCR1 += (0x000003E8); //increment CCR1 by 1000
 	 }
 }
 
@@ -156,8 +158,8 @@ void DAC_write(uint16_t data){
   }
 }
 
-uint16_t DAC_volt_conv(uint16_t volt){
-  return ((4096 * 1000) / Vref) * volt;
+uint16_t DAC_volt_conv(uint16_t milli_volt){
+  return (4096 *1000/ Vref) * milli_volt;
 }
 
 /**
@@ -173,26 +175,38 @@ void SystemClock_Config(void)
   */
   if (HAL_PWREx_ControlVoltageScaling(PWR_REGULATOR_VOLTAGE_SCALE1) != HAL_OK)
   {
-    Error_Handler();
+	Error_Handler();
   }
-
   /** Initializes the RCC Oscillators according to the specified parameters
   * in the RCC_OscInitTypeDef structure.
   */
   RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_MSI;
-  RCC_OscInitStruct.MSIState = RCC_MSI_ON;
+  //RCC_OscInitStruct.MSIState = RCC_MSI_ON;  //datasheet says NOT to turn on the MSI then change the frequency.
   RCC_OscInitStruct.MSICalibrationValue = 0;
-  RCC_OscInitStruct.MSIClockRange = RCC_MSIRANGE_6;
+  RCC_OscInitStruct.MSIClockRange = RCC_MSIRANGE_9;
+	/* from stm32l4xx_hal_rcc.h==
+	#define RCC_MSIRANGE_0                 MSI = 100 KHz
+	#define RCC_MSIRANGE_1                 MSI = 200 KHz
+	#define RCC_MSIRANGE_2                 MSI = 400 KHz
+	#define RCC_MSIRANGE_3                 MSI = 800 KHz
+	#define RCC_MSIRANGE_4                 MSI = 1 MHz
+	#define RCC_MSIRANGE_5                 MSI = 2 MHz
+	#define RCC_MSIRANGE_6                 MSI = 4 MHz
+	#define RCC_MSIRANGE_7                 MSI = 8 MHz
+	#define RCC_MSIRANGE_8                 MSI = 16 MHz
+	#define RCC_MSIRANGE_9                 MSI = 24 MHz
+	#define RCC_MSIRANGE_10                MSI = 32 MHz
+	#define RCC_MSIRANGE_11                MSI = 48 MHz   dont use this one*/
+  RCC_OscInitStruct.MSIState = RCC_MSI_ON;  //datasheet says NOT to turn on the MSI then change the frequency.
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_NONE;
   if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
   {
-    Error_Handler();
+	Error_Handler();
   }
-
   /** Initializes the CPU, AHB and APB buses clocks
   */
   RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
-                              |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2;
+							  |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2;
   RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_MSI;
   RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
   RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV1;
@@ -200,7 +214,7 @@ void SystemClock_Config(void)
 
   if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_0) != HAL_OK)
   {
-    Error_Handler();
+	Error_Handler();
   }
 }
 

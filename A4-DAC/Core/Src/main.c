@@ -84,7 +84,7 @@ int main(void)
 
   /* USER CODE BEGIN SysInit */
   RCC->AHB2ENR |= (RCC_AHB2ENR_GPIOAEN); //enable clock for port A (SCLK)
-  RCC->CFGR |= (0x7 << 11);
+  //RCC->CFGR |= (0x7 << 11);
 
   //reset pins
   GPIOA->MODER &= ~(GPIO_MODER_MODE4 | GPIO_MODER_MODE5 | GPIO_MODER_MODE6 | GPIO_MODER_MODE7);
