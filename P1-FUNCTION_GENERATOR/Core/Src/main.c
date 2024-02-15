@@ -89,12 +89,13 @@ int main(void)
 	NVIC->ISER[0] = (1 << (TIM2_IRQn & 0x1F));
 
 	RCC->APB1ENR1 |= (RCC_APB1ENR1_TIM2EN);	// turn on TIM2
-	TIM2->CCR1 = 0x000003E8;			// set CCR1 to 1000 for 100Hz initial wave
-	//TIM2->CCR1 = 1000;
+	//TIM2->CCR1 = 0x000003E8;			// set CCR1 to 1000 for 100Hz initial wave
+	TIM2->CCR1 = 999;
 	TIM2->DIER |= (TIM_DIER_CC1IE);	// enable interrupts on channel 1
 	TIM2->SR &= ~(TIM_SR_CC1IF);		// go into status register and clear interrupt flag
-	TIM2->ARR = 0x0003A980;			// set ARR to 240000
-	//TIM2->ARR = 240000;
+	//TIM2->ARR = 0x0003A980;			// set ARR to 240000
+	//TIM2->ARR = 239999;
+	TIM2->ARR = 47999;
 	TIM2->CR1 |= TIM_CR1_CEN;			// start timer
 
 	while (1)
@@ -139,12 +140,13 @@ void TIM2_IRQHandler(void){
 	 if (ARR_int){
 		 //reset CCR1 each time ARR reached
 		 //TIM2->CCR1 = 0x000003E8;
-		 TIM2->CCR1 = increment;
-		 ccr_count = increment;
+		 DAC_write(sine_table[((ccr_count+1)*5/1000)]);
+		 TIM2->CCR1 = increment-1;
+		 ccr_count = 0;
 	 }
 	 else if (C_int){
 		 //write to DAC each time CCR1 reached
-		 DAC_write(sine_table[((ccr_count)/1000)]);
+		 DAC_write(sine_table[((ccr_count+1)*5/1000)]);
 		 ccr_count += increment;
 		 //TIM2->CCR1 += (0x000003E8); //increment CCR1 by 1000
 		 TIM2->CCR1 += increment;
