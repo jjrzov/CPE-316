@@ -26,6 +26,7 @@
 #define DC_OFFSET 1500 //1.5V DC offset
 #define Vref 3300
 #define pi 3.14159
+#define SCLK 24000000 //24 Mhz
 
 
 /* Private function prototypes -----------------------------------------------*/
@@ -35,13 +36,26 @@ void fill_saw_table();
 void fill_triangle_table();
 void DAC_write(uint16_t data);
 uint16_t DAC_volt_conv(uint16_t milli_volt);
+int PressDetector(int col);
+void updateParam();
 
 //global variables ##############################################################################
 static uint16_t sine_table[TABLE_SIZE];
 static uint16_t saw_table[TABLE_SIZE];
 static uint16_t triangle_table[TABLE_SIZE];
+
 int ccr_count;
-int increment = 1000;
+int increment; // = 1000
+int f_factor; // initially set to 1 for 100Hz
+int duty_cycle;
+
+int square_flag = 0;
+int saw_flag = 0;
+int sine_flag = 0;
+int triangle_flag = 0;
+
+int calc_ARR;
+int calc_CCR1;
 
 int main(void)
 {
@@ -52,6 +66,29 @@ int main(void)
 	fill_sine_table();
 	fill_saw_table();
 	fill_triangle_table();
+
+	//KEYPAD ###############################################################################################
+	//turn on B and C
+	RCC->AHB2ENR |= (RCC_AHB2ENR_GPIOBEN | RCC_AHB2ENR_GPIOCEN); //A will be turned on in SPI
+
+	//bank B as GPIO
+	//preset rows as inputs
+	//pins B4,5,6,7
+	GPIOB->MODER &= ~(GPIO_MODER_MODE4 | GPIO_MODER_MODE5 | GPIO_MODER_MODE6 | GPIO_MODER_MODE7);
+
+	//set pins B4,5,6,7 to pull down
+	GPIOB->PUPDR &= ~(GPIO_PUPDR_PUPD4 | GPIO_PUPDR_PUPD5 | GPIO_PUPDR_PUPD6 | GPIO_PUPDR_PUPD7);
+	GPIOB->PUPDR |= (GPIO_PUPDR_PUPD4_1 | GPIO_PUPDR_PUPD5_1 | GPIO_PUPDR_PUPD6_1 | GPIO_PUPDR_PUPD7_1);
+
+	//bank C as GPIO
+	//preset the columns as outputs
+	//pins C0,1,2,3
+	GPIOC->MODER &= ~(GPIO_MODER_MODE0 | GPIO_MODER_MODE1 | GPIO_MODER_MODE2 | GPIO_MODER_MODE3);
+	GPIOC->MODER |= (GPIO_MODER_MODE0_0 | GPIO_MODER_MODE1_0 | GPIO_MODER_MODE2_0 | GPIO_MODER_MODE3_0);
+
+	//preset all output pins to 0
+	GPIOC->BRR = (GPIO_PIN_0 | GPIO_PIN_1 | GPIO_PIN_2 | GPIO_PIN_3);
+	int col = 0;
 
 	//SPI ###################################################################################################
 	RCC->AHB2ENR |= (RCC_AHB2ENR_GPIOAEN); //enable clock for port A (SCLK)
@@ -89,20 +126,184 @@ int main(void)
 	NVIC->ISER[0] = (1 << (TIM2_IRQn & 0x1F));
 
 	RCC->APB1ENR1 |= (RCC_APB1ENR1_TIM2EN);	// turn on TIM2
-	//TIM2->CCR1 = 0x000003E8;			// set CCR1 to 1000 for 100Hz initial wave
-	TIM2->CCR1 = 999;
+	//TIM2->CCR1 = 999;
+
+	//SQUARE WAVE
+	TIM2->CCR1 = 120000; //50% ->
+	//TIM2->CCR1 = 80000;
+	//TIM2->CCR1 = 60000;
+	//TIM2->CCR1 = 48000;
+
 	TIM2->DIER |= (TIM_DIER_CC1IE);	// enable interrupts on channel 1
 	TIM2->SR &= ~(TIM_SR_CC1IF);		// go into status register and clear interrupt flag
-	//TIM2->ARR = 0x0003A980;			// set ARR to 240000
-	//TIM2->ARR = 239999;
-	TIM2->ARR = 47999;
+	TIM2->SR &= ~(TIM_SR_UIF);
+	//TIM2->CR1 |= TIM_CR1_CEN;			// start timer
+	TIM2->ARR = 239999;
+	//TIM2->ARR = 119999;
+	//TIM2->ARR = 79999;
+	//TIM2->ARR = 59999;
+	//TIM2->ARR = 47999;
+
+	//initialization wave
+	square_flag = 1; //square wave
+	duty_cycle = 2; //50% duty cycle
+	f_factor = 1; //100 Hz
+	increment = 120000;
+	//updateParam();
+
 	TIM2->CR1 |= TIM_CR1_CEN;			// start timer
 
 	while (1)
 	{
 		//code for reading from keypad
+		//sets a square flag high or low (global var)
+		//goes to function for calculating ARR and CCR1
+		//set f_factor depending on freq
+		//set duty_cycle for square waves -1 for else
+
+		//GPIOB->ODR &= ~(GPIO_PIN_4 | GPIO_PIN_5 | GPIO_PIN_6 | GPIO_PIN_7); // set pin 3,4,5,10 of PORT B to 0
+		int res = -1;
+		while (res == -1){
+			res = PressDetector(col);
+			col++;
+			//HAL_Delay(5);
+			if (col >= 4){
+				col = 0;
+			}
+		}
+		//TIM2->DIER &= ~(TIM_DIER_CC1IE);	// disable interrupts on channel 1
+		//TIM2->CR1 &= ~(TIM_CR1_CEN); //stop timer
+		//res has pressed value
+		if (res == 6){
+			sine_flag = 1; //sine wave
+			square_flag = 0;
+			saw_flag = 0;
+			triangle_flag = 0;
+			updateParam();
+		}
+		else if (res == 7){
+			triangle_flag = 1; //triangle wave
+			square_flag = 0;
+			saw_flag = 0;
+			sine_flag = 0;
+			updateParam();
+		}
+		else if (res == 8){
+			saw_flag = 1; //saw wave
+			square_flag = 0;
+			sine_flag = 0;
+			triangle_flag = 0;
+			updateParam();
+		}
+		else if (res == 9){
+			square_flag = 1; //square wave
+			saw_flag = 0;
+			sine_flag = 0;
+			triangle_flag = 0;
+			updateParam();
+		}
+		else if (res == 1){
+			f_factor = 1; //100 Hz
+			updateParam();
+		}
+		else if (res == 2){
+			f_factor = 2; //200 Hz
+			updateParam();
+		}
+		else if (res == 3){
+			f_factor = 3; //300 Hz
+		}
+		else if (res == 4){
+			f_factor = 4; //400 Hz
+		}
+		else if (res == 5){
+			f_factor = 5; //500 Hz
+		}
+		else if (res == 0){
+			//might need a if to check if square wave
+			duty_cycle = 2; //50% duty cycle
+		}
+		else if (res == 14){ // #
+			if (duty_cycle < 9){
+				duty_cycle += 1;
+			}
+		}
+		else if (res == 15){ // *
+			if (duty_cycle > 1){
+				duty_cycle -= 1;
+			}
+		}
+		//updateParam();
+		//HAL_Delay(10);
+	}
+}
+
+void updateParam(){
+	//recalculates the ARR and CCR1 values
+	TIM2->DIER &= ~(TIM_DIER_CC1IE);	// disable interrupts on channel 1
+
+	calc_ARR = (SCLK / (f_factor * 100)) - 1; //calculate new ARR value
+	TIM2->ARR = calc_ARR; //set ARR
+
+	if (square_flag){
+		//if square wave
+		calc_CCR1 = (calc_ARR + 1) / duty_cycle;
+		//TIM2->CCR1 =
+		TIM2->CCR1 = calc_CCR1 - 1;
+		increment = calc_CCR1; //increment equals CCR1 for square
+	}
+	else {
+		calc_CCR1 = 1000;
+		TIM2->CCR1 = calc_CCR1 - 1;
+		increment = calc_CCR1;
+		ccr_count = 0; //MAYBE NOT NEEDED
 	}
 
+	//TIM2->CR1 |= TIM_CR1_CEN; //start timer
+	TIM2->DIER |= (TIM_DIER_CC1IE);	// enable interrupts on channel 1
+	//TIM2->SR &= ~(TIM_SR_CC1IF);
+	//TIM2->SR &= ~(TIM_SR_UIF);
+	TIM2->EGR = 1 << 0; //reset CNT
+	//HAL_Delay(5);
+}
+
+int PressDetector(int col){
+	//set all columns high then monitor rows for detection
+	//returns the now known row after button pressed
+	GPIOC->BRR = (GPIO_PIN_0 | GPIO_PIN_1 | GPIO_PIN_2 | GPIO_PIN_3);
+	GPIOC->BSRR = (1 << col); //set given column high
+	//check all the rows once
+	if (GPIOB->IDR & GPIO_PIN_4){
+		if (col == 3){
+			return 10;
+		} else {
+			return col + (0 * 4) + 1;
+		}
+	} else if (GPIOB->IDR & GPIO_PIN_5){
+		if (col == 3){
+			return 11;
+		} else {
+			return col + (1 * 4);
+		}
+	} else if (GPIOB->IDR & GPIO_PIN_6){
+		if (col == 3){
+			return 12;
+		} else {
+			return col + (2 * 4) - 1;
+		}
+	} else if (GPIOB->IDR & GPIO_PIN_7){
+		switch(col){
+		case 0:
+			return 15;
+		case 1:
+			return 0;
+		case 2:
+			return 14;
+		case 3:
+			return 13;
+		}
+	}
+	return -1;
 }
 
 void fill_sine_table(void){
@@ -139,17 +340,71 @@ void TIM2_IRQHandler(void){
 
 	 if (ARR_int){
 		 //reset CCR1 each time ARR reached
-		 //TIM2->CCR1 = 0x000003E8;
-		 DAC_write(sine_table[((ccr_count+1)*5/1000)]);
-		 TIM2->CCR1 = increment-1;
-		 ccr_count = 0;
+		 if (square_flag){
+			 //TIM2->CCR1 = increment;
+			 TIM2->CCR1 = increment - 1;
+			 DAC_write(DAC_volt_conv(3000));
+		 }
+		 else {
+			 if (sine_flag){
+			 	 DAC_write(sine_table[((ccr_count + 1) * f_factor / 1000)]);
+		 	 }
+		 	 else if (saw_flag){
+			 	 DAC_write(saw_table[((ccr_count + 1) * f_factor / 1000)]);
+		 	 }
+		 	 else if (triangle_flag){
+			 	 DAC_write(triangle_table[((ccr_count + 1) * f_factor / 1000)]);
+		 	 }
+			 TIM2->CCR1 = increment -1;
+			 ccr_count = 0;
+		 }
+
+		 //SIN/SAW/TRIANGLE WAVE
+		 //DAC_write(triangle_table[((ccr_count + 1) * f_factor / 1000)]); //*5
+		 //TIM2->CCR1 = increment-1;
+		 //ccr_count = 0;
+
+		 //SQUARE WAVE
+		 //TIM2->CCR1 = 120000-1; //now increment
+		 //TIM2->CCR1 = 80000;
+		 //TIM2->CCR1 = 60000;
+		 //TIM2->CCR1 = 48000;
+		 //DAC_write(DAC_volt_conv(3000));
 	 }
 	 else if (C_int){
 		 //write to DAC each time CCR1 reached
-		 DAC_write(sine_table[((ccr_count+1)*5/1000)]);
-		 ccr_count += increment;
-		 //TIM2->CCR1 += (0x000003E8); //increment CCR1 by 1000
-		 TIM2->CCR1 += increment;
+
+		 if (square_flag){
+			 DAC_write(DAC_volt_conv(0));
+			 TIM2->CCR1 += increment; //now increment hopefully
+		 }
+		 else {
+			 if (sine_flag){
+				 DAC_write(sine_table[((ccr_count + 1) * f_factor / 1000)]);
+			 }
+			 else if (saw_flag){
+				 DAC_write(saw_table[((ccr_count + 1) * f_factor / 1000)]);
+			 }
+			 else if (triangle_flag){
+				 DAC_write(triangle_table[((ccr_count + 1) * f_factor / 1000)]);
+			 }
+			 ccr_count += increment;
+			 TIM2->CCR1 += increment;
+		 }
+		 //TIM2->CCR1 += increment;
+
+		 //SIN/SAW/TRIANGLE WAVE
+		 //DAC_write(triangle_table[((ccr_count + 1) * f_factor / 1000)]); // *5
+		 //ccr_count += increment;
+		 //TIM2->CCR1 += increment;
+
+		 //SQUARE WAVE
+		 //DAC_write(DAC_volt_conv(0));
+		 //TIM2->CCR1 += 120000; //now increment hopefully
+		 //TIM2->CCR1 += 80000;
+		 //TIM2->CCR1 += 60000;
+		 //TIM2->CCR1 += 48000;
+
 	 }
 }
 
