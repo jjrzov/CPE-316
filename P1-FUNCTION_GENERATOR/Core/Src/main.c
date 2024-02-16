@@ -49,10 +49,10 @@ int increment; // = 1000
 int f_factor; // initially set to 1 for 100Hz
 int duty_cycle;
 
-int square_flag = 0;
-int saw_flag = 0;
-int sine_flag = 0;
-int triangle_flag = 0;
+int square_flag;
+int saw_flag;
+int sine_flag;
+int triangle_flag;
 
 int calc_ARR;
 int calc_CCR1;
@@ -129,16 +129,16 @@ int main(void)
 	//TIM2->CCR1 = 999;
 
 	//SQUARE WAVE
-	TIM2->CCR1 = 120000; //50% ->
+	//TIM2->CCR1 = 120000-1; //50% ->
 	//TIM2->CCR1 = 80000;
 	//TIM2->CCR1 = 60000;
 	//TIM2->CCR1 = 48000;
 
-	TIM2->DIER |= (TIM_DIER_CC1IE);	// enable interrupts on channel 1
-	TIM2->SR &= ~(TIM_SR_CC1IF);		// go into status register and clear interrupt flag
-	TIM2->SR &= ~(TIM_SR_UIF);
-	//TIM2->CR1 |= TIM_CR1_CEN;			// start timer
-	TIM2->ARR = 239999;
+	//TIM2->DIER |= (TIM_DIER_CC1IE);	// enable interrupts on channel 1
+	//TIM2->SR &= ~(TIM_SR_CC1IF);		// go into status register and clear interrupt flag
+	//TIM2->SR &= ~(TIM_SR_UIF);
+	//TIM2->CR1 |= TIM_CR1_CEN;
+	//TIM2->ARR = 239999;
 	//TIM2->ARR = 119999;
 	//TIM2->ARR = 79999;
 	//TIM2->ARR = 59999;
@@ -146,10 +146,14 @@ int main(void)
 
 	//initialization wave
 	square_flag = 1; //square wave
+	saw_flag = 0;
+	sine_flag = 0;
+	triangle_flag = 0;
+
 	duty_cycle = 2; //50% duty cycle
 	f_factor = 1; //100 Hz
-	increment = 120000;
-	//updateParam();
+	//increment = 120000;
+	updateParam();
 
 	TIM2->CR1 |= TIM_CR1_CEN;			// start timer
 
@@ -161,7 +165,6 @@ int main(void)
 		//set f_factor depending on freq
 		//set duty_cycle for square waves -1 for else
 
-		//GPIOB->ODR &= ~(GPIO_PIN_4 | GPIO_PIN_5 | GPIO_PIN_6 | GPIO_PIN_7); // set pin 3,4,5,10 of PORT B to 0
 		int res = -1;
 		while (res == -1){
 			res = PressDetector(col);
@@ -172,55 +175,57 @@ int main(void)
 			}
 		}
 		//TIM2->DIER &= ~(TIM_DIER_CC1IE);	// disable interrupts on channel 1
-		//TIM2->CR1 &= ~(TIM_CR1_CEN); //stop timer
 		//res has pressed value
 		if (res == 6){
 			sine_flag = 1; //sine wave
 			square_flag = 0;
 			saw_flag = 0;
 			triangle_flag = 0;
-			updateParam();
+			//updateParam();
 		}
 		else if (res == 7){
 			triangle_flag = 1; //triangle wave
 			square_flag = 0;
 			saw_flag = 0;
 			sine_flag = 0;
-			updateParam();
+			//updateParam();
 		}
 		else if (res == 8){
 			saw_flag = 1; //saw wave
 			square_flag = 0;
 			sine_flag = 0;
 			triangle_flag = 0;
-			updateParam();
+			//updateParam();
 		}
 		else if (res == 9){
 			square_flag = 1; //square wave
 			saw_flag = 0;
 			sine_flag = 0;
 			triangle_flag = 0;
-			updateParam();
+			//updateParam();
 		}
 		else if (res == 1){
 			f_factor = 1; //100 Hz
-			updateParam();
+			//updateParam();
 		}
 		else if (res == 2){
 			f_factor = 2; //200 Hz
-			updateParam();
+			//updateParam();
 		}
 		else if (res == 3){
 			f_factor = 3; //300 Hz
+			//updateParam();
 		}
 		else if (res == 4){
 			f_factor = 4; //400 Hz
+			//updateParam();
 		}
 		else if (res == 5){
 			f_factor = 5; //500 Hz
+			//updateParam();
 		}
 		else if (res == 0){
-			//might need a if to check if square wave
+			//might need an if to check if square wave
 			duty_cycle = 2; //50% duty cycle
 		}
 		else if (res == 14){ // #
@@ -234,13 +239,14 @@ int main(void)
 			}
 		}
 		//updateParam();
-		//HAL_Delay(10);
+		HAL_Delay(2);
 	}
 }
 
 void updateParam(){
 	//recalculates the ARR and CCR1 values
 	TIM2->DIER &= ~(TIM_DIER_CC1IE);	// disable interrupts on channel 1
+	TIM2->DIER &= ~(TIM_DIER_UIE);	// enable interrupts on ARR
 
 	calc_ARR = (SCLK / (f_factor * 100)) - 1; //calculate new ARR value
 	TIM2->ARR = calc_ARR; //set ARR
@@ -248,7 +254,6 @@ void updateParam(){
 	if (square_flag){
 		//if square wave
 		calc_CCR1 = (calc_ARR + 1) / duty_cycle;
-		//TIM2->CCR1 =
 		TIM2->CCR1 = calc_CCR1 - 1;
 		increment = calc_CCR1; //increment equals CCR1 for square
 	}
@@ -261,9 +266,10 @@ void updateParam(){
 
 	//TIM2->CR1 |= TIM_CR1_CEN; //start timer
 	TIM2->DIER |= (TIM_DIER_CC1IE);	// enable interrupts on channel 1
-	//TIM2->SR &= ~(TIM_SR_CC1IF);
-	//TIM2->SR &= ~(TIM_SR_UIF);
-	TIM2->EGR = 1 << 0; //reset CNT
+	TIM2->DIER |= (TIM_DIER_UIE);	// enable interrupts on ARR
+	TIM2->SR &= ~(TIM_SR_CC1IF);
+	TIM2->SR &= ~(TIM_SR_UIF);
+	TIM2->EGR |= (1 << 0); //reset CNT
 	//HAL_Delay(5);
 }
 
@@ -341,7 +347,6 @@ void TIM2_IRQHandler(void){
 	 if (ARR_int){
 		 //reset CCR1 each time ARR reached
 		 if (square_flag){
-			 //TIM2->CCR1 = increment;
 			 TIM2->CCR1 = increment - 1;
 			 DAC_write(DAC_volt_conv(3000));
 		 }
